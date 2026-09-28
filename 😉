@@ -1,0 +1,28 @@
+local P, RS, RUN = game:GetService("Players"), game:GetService("ReplicatedStorage"), game:GetService("RunService")
+
+local C = {
+	Walk = 16, Sprint = 28, MaxSprint = 40,   -- chạy
+	Jump = 50, MinJump = 20, MaxJump = 120,   -- nhảy
+	Fly = 60, MinFly = 10, MaxFly = 150,      -- bay
+	Public = false,                           -- true = ai cũng dùng được bay + nhảy cao
+	Allowed = {},                             -- vd: {12345678}
+	Gap = 0.1,                                -- chống spam
+}
+
+local remote = RS:FindFirstChild("MoveEvent") or Instance.new("RemoteEvent")
+remote.Name, remote.Parent = "MoveEvent", RS
+
+local last = {}
+
+local function perm(p)
+	return C.Public or RUN:IsStudio() or p.UserId == game.CreatorId or table.find(C.Allowed, p.UserId) ~= nil
+end
+
+local function num(v, lo, hi, def)
+	if typeof(v) == "number" and v == v then return math.clamp(v, lo, hi) end
+	return def
+end
+
+local function apply(p)
+	local hum = p.Character and p.Character:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health
