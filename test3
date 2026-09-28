@@ -1,0 +1,48 @@
+local P, RS, RUN = game:GetService("Players"), game:GetService("ReplicatedStorage"), game:GetService("RunService")
+
+local C = {
+	Walk = 16, Sprint = 28, MaxSprint = 40,          -- chạy nhanh
+	Fly = 60, MinFly = 10, MaxFly = 150,             -- bay
+	Public = false,                                  -- true = ai cũng bay được
+	Allowed = {},                                    -- vd: {12345678}
+	Gap = 0.1,                                       -- chống spam
+}
+
+local remote = RS:FindFirstChild("MoveEvent") or Instance.new("RemoteEvent")
+remote.Name, remote.Parent = "MoveEvent", RS
+
+local last = { sprint = {}, fly = {} }
+
+local function canFly(p)
+	return C.Public or RUN:IsStudio() or p.UserId == game.CreatorId or table.find(C.Allowed, p.UserId) ~= nil
+end
+
+remote.OnServerEvent:Connect(function(plr, kind, on, spd)
+	if typeof(on) ~= "boolean" or not last[kind] then return end
+
+	local now = os.clock()
+	if last[kind][plr] and now - last[kind][plr] < C.Gap then return end
+	last[kind][plr] = now
+
+	local hum = plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then return end
+
+	if kind == "sprint" then
+		hum.WalkSpeed = on and math.min(C.Sprint, C.MaxSprint) or C.Walk
+	elseif canFly(plr) then
+		spd = (typeof(spd) == "number" and spd == spd) and math.clamp(spd, C.MinFly, C.MaxFly) or C.Fly
+		plr:SetAttribute("FlySpeed", spd)
+		plr:SetAttribute("Flying", on)
+	end
+end)
+
+P.PlayerAdded:Connect(function(plr)
+	plr.CharacterAdded:Connect(function(char)
+		plr:SetAttribute("Flying", false)
+		char:WaitForChild("Humanoid").WalkSpeed = C.Walk
+	end)
+end)
+
+P.PlayerRemoving:Connect(function(plr)
+	last.sprint[plr], last.fly[plr] = nil, nil
+end)
