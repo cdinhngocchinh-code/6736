@@ -1,0 +1,109 @@
+local P, UIS, RS = game:GetService("Players"), game:GetService("UserInputService"), game:GetService("RunService")
+local plr = P.LocalPlayer
+local MIN, MAX, IMG = 16, 100, "rbxassetid://0" -- thay 0 bằng ID ảnh của bạn
+local speed, S, orig = MIN, {}, {}
+local W, ON, OFF = Color3.new(1, 1, 1), Color3.fromRGB(60, 150, 90), Color3.fromRGB(60, 60, 80)
+local Left = Enum.TextXAlignment.Left
+
+local function new(c, p, par)
+	local o = Instance.new(c)
+	for k, v in pairs(p) do o[k] = v end
+	o.Parent = par
+	return o
+end
+local function round(o, s, off) new("UICorner", {CornerRadius = UDim.new(s, off or 0)}, o) end
+local function text(c, p, par)
+	p.TextColor3, p.Font, p.TextSize = W, Enum.Font.GothamBold, p.TextSize or 16
+	if c == "TextLabel" then p.BackgroundTransparency = 1 end
+	return new(c, p, par)
+end
+local function hum() local c = plr.Character return c and c:FindFirstChildOfClass("Humanoid") end
+
+local function setSpeed() local h = hum() if h then h.WalkSpeed = speed end end
+local function setInvis()
+	local c = plr.Character
+	if not c then return end
+	for _, d in ipairs(c:GetDescendants()) do
+		if (d:IsA("BasePart") and d.Name ~= "HumanoidRootPart") or d:IsA("Decal") then
+			orig[d] = orig[d] or d.Transparency
+			d.Transparency = S.invis and 1 or orig[d]
+		end
+	end
+end
+plr.CharacterAdded:Connect(function() orig = {} task.wait(0.5) setSpeed() setInvis() end)
+
+-- Menu
+local gui = new("ScreenGui", {Name = "TrinhMenu", ResetOnSpawn = false}, plr:WaitForChild("PlayerGui"))
+local menu = new("Frame", {Size = UDim2.fromOffset(220, 150), Position = UDim2.new(0, 10, 0.5, -75), BackgroundColor3 = Color3.fromRGB(30, 30, 40)}, gui)
+round(menu, 0, 12)
+text("TextLabel", {Size = UDim2.new(1, -50, 0, 30), Position = UDim2.fromOffset(10, 4), Text = "Menu", TextSize = 18, TextXAlignment = Left}, menu)
+local close = text("TextButton", {Size = UDim2.fromOffset(28, 28), Position = UDim2.new(1, -34, 0, 6), BackgroundColor3 = Color3.fromRGB(200, 60, 60), Text = "✕", TextSize = 14}, menu)
+round(close, 0, 8)
+local sl = text("TextLabel", {Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(10, 38), Text = "Tốc độ: " .. speed, TextSize = 14, TextXAlignment = Left}, menu)
+local track = new("Frame", {Size = UDim2.new(1, -30, 0, 8), Position = UDim2.fromOffset(15, 72), BackgroundColor3 = Color3.fromRGB(70, 70, 90)}, menu)
+round(track, 1)
+local knob = new("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(22, 22), Position = UDim2.fromScale(0, 0.5), BackgroundColor3 = Color3.fromRGB(90, 170, 255)}, track)
+round(knob, 1)
+
+local grid = new("Frame", {Size = UDim2.new(1, -20, 0, 36), Position = UDim2.fromOffset(10, 96), BackgroundTransparency = 1}, menu)
+new("UIGridLayout", {CellSize = UDim2.new(0.5, -3, 0, 36), CellPadding = UDim2.fromOffset(6, 6)}, grid)
+for _, t in ipairs({{"invis", "Tàng hình"}, {"fly", "Bay"}}) do
+	local k = t[1]
+	local b = text("TextButton", {BackgroundColor3 = OFF, Text = t[2], TextSize = 14}, grid)
+	round(b, 0, 8)
+	b.Activated:Connect(function()
+		S[k] = not S[k]
+		b.BackgroundColor3 = S[k] and ON or OFF
+		if k == "invis" then setInvis()
+		elseif not S[k] then local h = hum() if h then h.PlatformStand = false end end
+	end)
+end
+
+-- Ô tròn (kéo để di chuyển, chạm để mở menu)
+local circle = new("ImageButton", {Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0, 10, 0.5, -32), BackgroundColor3 = Color3.fromRGB(90, 170, 255),
+	Image = IMG, ScaleType = Enum.ScaleType.Crop, Visible = false}, gui)
+round(circle, 1)
+text("TextLabel", {Size = UDim2.new(1, 0, 0, 18), Position = UDim2.new(0, 0, 1, 2), Text = "Trinh", TextSize = 14, TextStrokeTransparency = 0.5}, circle)
+
+local function press(t) return t == Enum.UserInputType.MouseButton1 or t == Enum.UserInputType.Touch end
+local function slide(x)
+	local rel = math.clamp((x - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+	speed = math.floor(MIN + rel * (MAX - MIN))
+	knob.Position = UDim2.fromScale(rel, 0.5)
+	sl.Text = "Tốc độ: " .. speed
+	setSpeed()
+end
+
+local sDrag, cDrag, moved, start, from
+track.InputBegan:Connect(function(i) if press(i.UserInputType) then sDrag = true slide(i.Position.X) end end)
+circle.InputBegan:Connect(function(i) if press(i.UserInputType) then cDrag, moved, start, from = true, false, i.Position, circle.Position end end)
+close.Activated:Connect(function() menu.Visible, circle.Visible = false, true end)
+
+UIS.InputChanged:Connect(function(i)
+	local t = i.UserInputType
+	if t ~= Enum.UserInputType.MouseMovement and t ~= Enum.UserInputType.Touch then return end
+	if sDrag then slide(i.Position.X) end
+	if cDrag then
+		local d = i.Position - start
+		moved = moved or d.Magnitude > 6
+		if moved then circle.Position = UDim2.new(from.X.Scale, from.X.Offset + d.X, from.Y.Scale, from.Y.Offset + d.Y) end
+	end
+end)
+UIS.InputEnded:Connect(function(i)
+	if not press(i.UserInputType) then return end
+	sDrag = false
+	if cDrag and not moved then menu.Visible, circle.Visible = true, false end
+	cDrag = false
+end)
+
+-- Bay: Space = lên, Ctrl trái = xuống
+RS.Heartbeat:Connect(function()
+	local h, r = hum(), plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+	if not (S.fly and h and r) then return end
+	h.PlatformStand = true
+	local up = (UIS:IsKeyDown(Enum.KeyCode.Space) and 1 or 0) - (UIS:IsKeyDown(Enum.KeyCode.LeftControl) and 1 or 0)
+	local m = h.MoveDirection
+	r.AssemblyLinearVelocity = Vector3.new(m.X, up, m.Z) * speed
+end)
+
+setSpeed(100)
