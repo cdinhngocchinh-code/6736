@@ -1,0 +1,120 @@
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local player = Players.LocalPlayer
+
+local MIN_SPEED, MAX_SPEED = 16, 100
+local TRINH_IMAGE = "rbxassetid://0" -- thay 0 bằng ID hình của bạn
+
+local speed = MIN_SPEED
+local invisible = false
+local originals = {}
+
+local function applySpeed()
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then hum.WalkSpeed = speed end
+end
+
+local function applyInvisible()
+	local char = player.Character
+	if not char then return end
+	for _, d in ipairs(char:GetDescendants()) do
+		if (d:IsA("BasePart") and d.Name ~= "HumanoidRootPart") or d:IsA("Decal") then
+			if originals[d] == nil then originals[d] = d.Transparency end
+			d.Transparency = invisible and 1 or originals[d]
+		end
+	end
+end
+
+player.CharacterAdded:Connect(function()
+	originals = {}
+	task.wait(0.5)
+	applySpeed()
+	applyInvisible()
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "TrinhMenu"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 240, 0, 170)
+menu.Position = UDim2.new(0, 20, 0.5, -85)
+menu.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+menu.Parent = gui
+Instance.new("UICorner", menu).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 30)
+title.Position = UDim2.new(0, 10, 0, 5)
+title.BackgroundTransparency = 1
+title.Text = "Menu"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = menu
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 28, 0, 28)
+closeBtn.Position = UDim2.new(1, -34, 0, 6)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 14
+closeBtn.Parent = menu
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
+
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, -20, 0, 24)
+speedLabel.Position = UDim2.new(0, 10, 0, 45)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Tốc độ: " .. speed
+speedLabel.TextColor3 = Color3.new(1, 1, 1)
+speedLabel.TextXAlignment = Enum.TextXAlignment.Left
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextSize = 16
+speedLabel.Parent = menu
+
+local track = Instance.new("Frame")
+track.Size = UDim2.new(1, -30, 0, 8)
+track.Position = UDim2.new(0, 15, 0, 82)
+track.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
+track.Parent = menu
+Instance.new("UICorner", track).CornerRadius = UDim.new(1, 0)
+
+local knob = Instance.new("Frame")
+knob.AnchorPoint = Vector2.new(0.5, 0.5)
+knob.Size = UDim2.new(0, 22, 0, 22)
+knob.Position = UDim2.new(0, 0, 0.5, 0)
+knob.BackgroundColor3 = Color3.fromRGB(90, 170, 255)
+knob.Parent = track
+Instance.new("UICorner", knob).CornerRadius = UDim.new(1, 0)
+
+local invisBtn = Instance.new("TextButton")
+invisBtn.Size = UDim2.new(1, -30, 0, 36)
+invisBtn.Position = UDim2.new(0, 15, 0, 115)
+invisBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+invisBtn.Text = "Tàng hình: TẮT"
+invisBtn.TextColor3 = Color3.new(1, 1, 1)
+invisBtn.Font = Enum.Font.GothamBold
+invisBtn.TextSize = 16
+invisBtn.Parent = menu
+Instance.new("UICorner", invisBtn).CornerRadius = UDim.new(0, 8)
+
+-- Khuôn tròn Trinh (hiện khi đóng menu)
+local circle = Instance.new("ImageButton")
+circle.Size = UDim2.new(0, 64, 0, 64)
+circle.Position = UDim2.new(0, 20, 0.5, -32)
+circle.BackgroundColor3 = Color3.fromRGB(90, 170, 255)
+circle.Image = TRINH_IMAGE
+circle.ScaleType = Enum.ScaleType.Crop
+circle.Visible = false
+circle.Parent = gui
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+local name = Instance.new("TextLabel")
+name.Size = UDim2.new(1,
