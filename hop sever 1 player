@@ -1,0 +1,23 @@
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local event = RS:FindFirstChild("HostSoloServer") or Instance.new("RemoteEvent")
+event.Name = "HostSoloServer"
+event.Parent = RS
+
+local busy = {}
+
+local function notify(player, msg)
+	if player and player.Parent then
+		event:FireClient(player, msg)
+	end
+end
+
+event.OnServerEvent:Connect(function(player)
+	if busy[player] then return end
+	busy[player] = true
+
+	if RunService:IsStudio() or game.PlaceId == 0 then
+		notify(player, "Không teleport được trong Studio. Hãy Publish game rồi
