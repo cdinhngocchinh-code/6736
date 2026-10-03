@@ -1,0 +1,38 @@
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+
+local event = Instance.new("RemoteEvent")
+event.Name = "HostSoloServer"
+event.Parent = RS
+
+local busy = {}
+
+event.OnServerEvent:Connect(function(player)
+	if busy[player] then return end
+	busy[player] = true
+
+	local ok, code = pcall(function()
+		return TeleportService:ReserveServer(game.PlaceId)
+	end)
+
+	if ok then
+		local ok2, err = pcall(function()
+			TeleportService:TeleportToPrivateServer(game.PlaceId, code, {player})
+		end)
+		if not ok2 then warn("Teleport lỗi:", err) end
+	else
+		warn("ReserveServer lỗi:", code)
+	end
+
+	task.delay(5, function() busy[player] = nil end)
+end)
+
+-- Trong server riêng: chỉ cho 1 người
+if game.PrivateServerId ~= "" and game.PrivateServerOwnerId == 0 then
+	Players.PlayerAdded:Connect(function(p)
+		if #Players:GetPlayers() > 1 then
+			p:Kick("Server này chỉ cho 1 người.")
+		end
+	end)
+end
